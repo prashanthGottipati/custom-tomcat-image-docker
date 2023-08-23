@@ -1,28 +1,29 @@
+FROM ubuntu:latest AS stage1
+
+RUN apt update && apt install -y git
+
+WORKDIR git
+
+RUN git clone https://github.com/prashanthGottipati/custom-tomcat-image-docker.git
+
 # Use Tomcat 9 as the base image
-FROM tomcat:9.0.79-jdk8-corretto-al2
+FROM tomcat:9.0.79-jdk8-corretto-al2 
 
 WORKDIR /usr/local/tomcat
 
+COPY  --from=stage1 /git/custom-tomcat-image-docker/ custom-tomcat-image-docker/
+
 RUN rm -rf webapps && \
-	mv webapps.dist webapps
+	mv webapps.dist webapps && \
+	cp ./custom-tomcat-image-docker/context.xml ./webapps/host-manager/META-INF/context.xml && \
+	cp ./custom-tomcat-image-docker/context.xml ./webapps/manager/META-INF/context.xml && \
+	cp ./custom-tomcat-image-docker/tomcat-users.xml ./conf/tomcat-users.xml && \
+	cp ./custom-tomcat-image-docker/webapps/works-with-heroku-1.0.war ./webapps/ && \
+	rm -rf ./custom-tomcat-image-docker
 
-COPY context.xml ./webapps/host-manager/META-INF/context.xml
-COPY context.xml ./webapps/manager/META-INF/context.xml
-COPY tomcat-users.xml ./conf/tomcat-users.xml 
-
-COPY webapps/works-with-heroku-1.0.war ./webapps/
-
-# Copy your custom tomcat-users.xml file to the container
-##COPY tomcat-users.xml $CATALINA_HOME/conf/
-
-# Copy your web application WAR file to the webapps directory
-##COPY webapps/works-with-heroku-1.0.war $CATALINA_HOME/webapps/
 
 # Expose Tomcat port
 EXPOSE 8080
-
-# Start Tomcat
-##CMD ["catalina.sh", "run"]
 
 
 
